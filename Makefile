@@ -7,7 +7,6 @@ OBJ=\
 	mt7610.o	\
 	mt7620.o	\
 	mt7628.o	\
-	mt7662.o	\
 	mt7663.o	\
 	mtkeepmgr.o	\
 	rt5592.o	\

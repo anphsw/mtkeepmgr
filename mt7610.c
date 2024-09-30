@@ -496,3 +496,5 @@ static int mt7610_eep_parse(struct main_ctx *mc)
 }
 
 CHIP(MT7610, 0x7610, mt7610_eep_parse);
+CHIP(MT7612, 0x7612, mt7610_eep_parse);
+CHIP(MT7662, 0x7662, mt7610_eep_parse);
