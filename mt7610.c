@@ -287,18 +287,29 @@ static void mt7610_dump_rate_power(struct main_ctx *mc)
 	}
 }
 
-static void mt7610_read_tssi_tcomp_tbl(struct main_ctx *mc,
-				       unsigned off, int8_t *tbl)
+static void mt7610_read_eeprom_to_tbl(struct main_ctx *mc,
+				       unsigned off, unsigned size, int8_t *tbl)
 {
 	uint16_t val;
 	int i;
 
 	/* Read data from eeprom */
-	for (i = 0; i < E_TSSI_TCOMP_N / 2; ++i) {
+	for (i = 0; i < size / 2; ++i) {
 		val = eep_read_word(mc, off + 2 * i);
 		tbl[2 * i + 0] = (val >> 8) & 0xff;
 		tbl[2 * i + 1] = (val >> 0) & 0xff;
 	}
+	if (size % 2) {
+		val = eep_read_word(mc, off + size - 2);
+		tbl[size - 1] = (val >> 0) & 0xff;
+	}
+}
+
+
+static void mt7610_read_tssi_tcomp_tbl(struct main_ctx *mc,
+				       unsigned off, int8_t *tbl)
+{
+	mt7610_read_eeprom_to_tbl(mc, off, E_TSSI_TCOMP_N, tbl);
 
 	/* Place neutral element in the middle of the table */
 	memmove(&tbl[E_TSSI_TCOMP_N / 2 + 1], &tbl[E_TSSI_TCOMP_N / 2],
@@ -341,6 +352,51 @@ static const char *mt7610_dump_tssi_tcomp(struct main_ctx *mc, unsigned off)
 	mt7610_adj_tssi_tcomp_tbl(tbl);
 
 	return mt7610_dump_tssi_tcomp_tbl(tbl);
+}
+
+static const char *mt7610_dump_generic_tbl(int8_t *tbl, unsigned size)
+{
+	static char buf[0x100];
+	char *p = buf, *e = buf + sizeof(buf);
+	unsigned i;
+
+	for (i = 0; i < size; ++i)
+		p += snprintf(p, e - p, " %+4d", tbl[i]);
+
+	return &buf[1];
+}
+
+static const char *mt7610_dump_itxbf_tank_tbl(int8_t *tbl, unsigned size)
+{
+	static char buf[0x100];
+	char *p = buf, *e = buf + sizeof(buf);
+	unsigned i;
+
+	for (i = 0; i < size / 2; ++i)
+		p += snprintf(p, e - p, " %+4d/%d", tbl[2*i], tbl[2*i + 1]);
+
+	return &buf[1];
+}
+
+static const char *mt7610_dump_itxbf_tank(struct main_ctx *mc, unsigned off)
+{
+	int8_t tbl[E_ITXBF_CAL_TANK_N];
+	mt7610_read_eeprom_to_tbl(mc, off, E_ITXBF_CAL_TANK_N, tbl);
+	return mt7610_dump_itxbf_tank_tbl(tbl, E_ITXBF_CAL_TANK_N);
+}
+
+static const char *mt7610_dump_itxbf_divphase(struct main_ctx *mc, unsigned off)
+{
+	int8_t tbl[E_ITXBF_CAL_DIV_N];
+	mt7610_read_eeprom_to_tbl(mc, off, E_ITXBF_CAL_DIV_N, tbl);
+	return mt7610_dump_generic_tbl(tbl, E_ITXBF_CAL_DIV_N);
+}
+
+static const char *mt7610_dump_itxbf_resphase(struct main_ctx *mc, unsigned off)
+{
+	int8_t tbl[E_ITXBF_CAL_RES_N];
+	mt7610_read_eeprom_to_tbl(mc, off, E_ITXBF_CAL_RES_N, tbl);
+	return mt7610_dump_generic_tbl(tbl, E_ITXBF_CAL_RES_N);
 }
 
 static int mt7610_eep_parse(struct main_ctx *mc)
@@ -492,6 +548,16 @@ static int mt7610_eep_parse(struct main_ctx *mc)
 	       mt7610_dump_tssi_tcomp(mc, E_TSSI_TCOMP_5G_2_BASE));
 	printf("\n");
 
+	printf("[Implicit TX beamforming parameters]\n");
+	printf("  CAL tank rep/iqm   : {%s}\n",
+	       mt7610_dump_itxbf_tank(mc, E_ITXBF_CAL_TANK));
+	printf("  CAL divphase       : {%s}\n",
+	       mt7610_dump_itxbf_divphase(mc, E_ITXBF_CAL_DIVPHASE));
+
+	printf("  CAL rephase init   : {%s}\n",
+	       mt7610_dump_itxbf_resphase(mc, E_ITXBF_CAL_RESPHASE));
+	printf("  CAL rephase error  : {%s}\n",
+	       mt7610_dump_itxbf_resphase(mc, E_ITXBF_CAL_RESPHASE_ERR));
 	return 0;
 }
 

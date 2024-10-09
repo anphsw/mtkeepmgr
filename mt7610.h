@@ -245,7 +245,17 @@
 #define E_TX_AGC_STEP_VAL	0x00ff	/* Tx AGC step value, 1/2 dBm */
 #define E_TX_AGC_STEP_VAL_S	0
 
+#define E_ITXBF_CAL			0x00c0		// LNA parameters
+#define E_ITXBF_CAL_TANK		0x0180		// tank code
+#define E_ITXBF_CAL_DIVPHASE		0x018A		// divider phase
+#define E_ITXBF_CAL_RESPHASE		0x0190		// phase
+#define E_ITXBF_CAL_RESPHASE_ERR	0x019E		// phase error
+#define E_ITXBF_CAL_TANK_N		(E_ITXBF_CAL_DIVPHASE - E_ITXBF_CAL_TANK)
+#define E_ITXBF_CAL_DIV_N		(E_ITXBF_CAL_RESPHASE - E_ITXBF_CAL_DIVPHASE)
+#define E_ITXBF_CAL_RES_N		(E_ITXBF_CAL_RESPHASE_ERR - E_ITXBF_CAL_RESPHASE)
+
 #define E_USB_VID		0x01c2
 #define E_USB_PID		0x01c4
+
 
 #endif	/* !_MT7610_H_ */
